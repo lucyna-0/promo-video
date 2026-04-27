@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>上市公司俱乐部宣传视频</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+
+  #bg-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+  }
+  #bg-gradient {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 20% 50%, rgba(200,160,80,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(200,160,80,0.05) 0%, transparent 50%);
+  }
+
+  #stage {
+    width: 1920px; height: 1080px;
+    position: absolute; top: 0; left: 0;
+    overflow: hidden; transform-origin: 0 0; z-index: 10;
+  }
+
+  .scene {
+    position: absolute; width: 100%; height: 100%;
+    top: 0; left: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .scene.active { opacity: 1; pointer-events: auto; }
+
+  .title-main { font-size: 96px; font-weight: 900; letter-spacing: 12px; color: #C8A050; text-align: center; }
+  .title-sub { font-size: 28px; letter-spacing: 6px; color: rgba(255,255,255,0.7); text-align: center; margin-top: 30px; }
+  .mission-title { font-size: 72px; font-weight: 900; color: #C8A050; letter-spacing: 8px; text-align: center; }
+  .mission-text { font-size: 24px; line-height: 2; color: rgba(255,255,255,0.85); text-align: center; max-width: 1200px; margin-top: 50px; letter-spacing: 2px; }
+  .scale-number { font-size: 120px; font-weight: 900; color: #C8A050; text-align: center; }
+  .scale-label { font-size: 24px; color: rgba(255,255,255,0.7); text-align: center; margin-top: 20px; letter-spacing: 4px; }
+  .strategy-title { font-size: 60px; font-weight: 900; color: #C8A050; letter-spacing: 6px; }
+  .strategy-item { font-size: 22px; color: rgba(255,255,255,0.8); margin: 18px 0; letter-spacing: 2px; }
+  .system-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; margin-top: 60px; }
+  .system-card { background: rgba(200,160,80,0.08); border: 1px solid rgba(200,160,80,0.2); padding: 40px 30px; text-align: center; }
+  .system-card-title { font-size: 24px; color: #C8A050; font-weight: 700; margin-bottom: 20px; letter-spacing: 3px; }
+  .system-card-desc { font-size: 16px; color: rgba(255,255,255,0.65); line-height: 1.8; letter-spacing: 1px; }
+  .tech-title { font-size: 60px; font-weight: 900; color: #C8A050; letter-spacing: 6px; }
+  .tech-desc { font-size: 20px; color: rgba(255,255,255,0.7); margin-top: 30px; letter-spacing: 2px; }
+  .partner-title { font-size: 60px; font-weight: 900; color: #C8A050; letter-spacing: 6px; }
+  .partner-logos { margin-top: 60px; display: flex; gap: 60px; opacity: 0.6; }
+  .partner-logo-placeholder { width: 200px; height: 80px; border: 1px solid rgba(200,160,80,0.3); display: flex; align-items: center; justify-content: center; color: rgba(200,160,80,0.5); font-size: 14px; letter-spacing: 2px; }
+  .ending-main { font-size: 84px; font-weight: 900; color: #C8A050; letter-spacing: 10px; text-align: center; }
+  .ending-sub { font-size: 24px; color: rgba(255,255,255,0.6); text-align: center; margin-top: 40px; letter-spacing: 4px; }
+  .ending-cta { margin-top: 60px; padding: 16px 60px; border: 1px solid rgba(200,160,80,0.5); color: #C8A050; font-size: 20px; letter-spacing: 4px; cursor: pointer; }
+
+  #arrow-left, #arrow-right {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    z-index: 1000; background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(200,160,80,0.2); color: rgba(200,160,80,0.6);
+    width: 50px; height: 80px; cursor: pointer; font-size: 28px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  #arrow-left { left: 20px; border-radius: 0 8px 8px 0; }
+  #arrow-right { right: 20px; border-radius: 8px 0 0 8px; }
+  #arrow-left:hover, #arrow-right:hover { background: rgba(200,160,80,0.2); color: #C8A050; }
+
+  #scene-tabs {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; z-index: 1000;
+    padding: 12px 20px; background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px); border-radius: 30px 30px 0 0;
+  }
+  .scene-tab {
+    background: rgba(200,160,80,0.1); border: 1px solid rgba(200,160,80,0.2);
+    color: rgba(200,160,80,0.6); padding: 6px 14px; font-size: 12px;
+    cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+    font-family: inherit; border-radius: 20px; white-space: nowrap;
+  }
+  .scene-tab:hover { background: rgba(200,160,80,0.25); color: #C8A050; }
+  .scene-tab.active { background: rgba(200,160,80,0.35); border-color: rgba(200,160,80,0.6); color: #C8A050; }
+
+  #controls { position: absolute; bottom: 60px; right: 30px; display: flex; gap: 16px; z-index: 1000; }
+  .ctrl-btn {
+    background: rgba(200,160,80,0.15); border: 1px solid rgba(200,160,80,0.3);
+    color: #C8A050; padding: 8px 20px; font-size: 14px; cursor: pointer;
+    letter-spacing: 2px; transition: all 0.2s; font-family: inherit;
+  }
+  .ctrl-btn:hover { background: rgba(200,160,80,0.3); }
+
+  .progress-bar {
+    position: absolute; bottom: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, #C8A050, rgba(200,160,80,0.3));
+    z-index: 1001; transition: width 0.1s linear;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="bg-gradient"></div>
+
+<div id="stage">
+  <div class="scene active" id="scene1"><div class="title-main">&#19978;&#24066;&#20844;&#21496;&#20465;&#20048;&#37096;</div><div class="title-sub">&#20026;&#38142;&#25509;&#32780;&#29983; &#183; &#20026;&#19978;&#24066;&#26381;&#21153;</div></div>
+  <div class="scene" id="scene2"><div class="mission-title">&#20351;&#21629;&#19982;&#24819;&#26223;</div><div class="mission-text">&#38142;&#25509;&#19978;&#24066;&#20844;&#21496;&#36164;&#28304;&#65292;&#26500;&#24314;&#39640;&#36136;&#37327;&#20225;&#19994;&#23478;&#29983;&#24577;&#22280;<br>&#36196;&#33021;&#20225;&#19994;&#19978;&#24066;&#20043;&#36335;&#65292;&#21161;&#21147;&#20013;&#22269;&#21830;&#19994;&#36208;&#21521;&#19990;&#30028;</div></div>
+  <div class="scene" id="scene3"><div class="scale-number">500+</div><div class="scale-label">&#19978;&#24066;&#21450;&#25311;&#19978;&#24066;&#20844;&#21496;&#36164;&#28304;</div><div style="margin-top:80px;display:flex;gap:100px;"><div style="text-align:center;"><div class="scale-number" style="font-size:72px;">50+</div><div class="scale-label">&#34892;&#19994;&#35206;&#30422;</div></div><div style="text-align:center;"><div class="scale-number" style="font-size:72px;">30+</div><div class="scale-label">&#22478;&#24066;&#33410;&#28857;</div></div></div></div>
+  <div class="scene" id="scene4"><div class="strategy-title">&#26680;&#24515;&#25112;&#30053;</div><div style="margin-top:60px;text-align:left;max-width:900px;"><div class="strategy-item">&#9827; &#28145;&#24230;&#38142;&#25509;&#19978;&#24066;&#20844;&#21496;&#39640;&#31649;&#19982;&#25237;&#36164;&#20154;</div><div class="strategy-item">&#9827; &#25171;&#36896;&#20840;&#29983;&#21629;&#21688;&#26399;&#20225;&#19994;&#19978;&#24066;&#26381;&#21153;&#20307;&#31995;</div><div class="strategy-item">&#9827; &#26500;&#24314;&#20135;&#34746;&#32467;&#21512;&#30340;&#36164;&#28304;&#20849;&#20139;&#24179;&#21488;</div><div class="strategy-item">&#9827; &#25512;&#21160;&#20225;&#19994;&#20840;&#29699;&#21270;&#24067;&#23616;&#19982;&#21697;&#29260;&#21319;&#32423;</div></div></div>
+  <div class="scene" id="scene5"><div class="strategy-title">&#26381;&#21153;&#20307;&#31995;</div><div class="system-grid" style="max-width:1400px;"><div class="system-card"><div class="system-card-title">&#19978;&#24066;&#36757;&#23548;</div><div class="system-card-desc">IPO&#36335;&#24452;&#35268;&#21010;<br>&#21512;&#35268;&#35786;&#26029;<br>&#20013;&#20171;&#36164;&#28304;&#23545;&#25509;</div></div><div class="system-card"><div class="system-card-title">&#25237;&#34746;&#23545;&#25509;</div><div class="system-card-desc">&#36335;&#28436;&#24179;&#21488;<br>&#25237;&#36164;&#32773;&#20851;&#31995;<br>&#36164;&#26412;&#36816;&#20316;&#25903;&#25345;</div></div><div class="system-card"><div class="system-card-title">&#36164;&#28304;&#38142;&#25509;</div><div class="system-card-desc">&#20225;&#19994;&#23478;&#31038;&#32676;<br>&#20135;&#19994;&#19978;&#19979;&#28201;&#23545;&#25509;<br>&#25919;&#20225;&#27807;&#36890;&#26725;&#26725;</div></div><div class="system-card"><div class="system-card-title">&#21697;&#29260;&#36164;&#33021;</div><div class="system-card-desc">&#23186;&#20307;&#20256;&#25773;<br>&#25688;&#26723;&#35780;&#36873;<br>&#21697;&#29260;&#21319;&#32423;&#21672;&#35810;</div></div></div></div>
+  <div class="scene" id="scene6"><div class="tech-title">&#31185;&#25216;&#39537;&#21160;</div><div class="tech-desc">&#25968;&#23383;&#21270;&#24179;&#21488; &#183; &#26234;&#33021;&#21305;&#37197; &#183; &#25968;&#25454;&#36164;&#33021;</div><div style="margin-top:80px;display:flex;gap:80px;align-items:center;"><div style="width:300px;height:200px;border:1px solid rgba(200,160,80,0.2);display:flex;align-items:center;justify-content:center;color:rgba(200,160,80,0.4);font-size:16px;letter-spacing:2px;">&#25968;&#25454;&#21487;&#35270;&#21270;&#22823;&#23631;</div><div style="width:300px;height:200px;border:1px solid rgba(200,160,80,0.2);display:flex;align-items:center;justify-content:center;color:rgba(200,160,80,0.4);font-size:16px;letter-spacing:2px;">AI&#26234;&#33021;&#21305;&#37197;&#24341;&#25806;</div></div></div>
+  <div class="scene" id="scene7"><div class="partner-title">&#26680;&#24515;&#21512;&#20249;&#20154;</div><div class="partner-logos"><div class="partner-logo-placeholder">&#21512;&#20249;&#20154; A</div><div class="partner-logo-placeholder">&#21512;&#20249;&#20154; B</div><div class="partner-logo-placeholder">&#21512;&#20249;&#20154; C</div></div></div>
+  <div class="scene" id="scene8"><div class="ending-main">&#21152;&#20837;&#25105;&#20204;</div><div class="ending-sub">&#19982;500+&#19978;&#24066;&#20844;&#21496;&#19968;&#36215;&#65292;&#20849;&#21019;&#26410;&#26469;</div><div class="ending-cta">&#31435;&#21363;&#30003;&#35831;&#21152;&#20837;</div></div>
+</div>
+
+<div id="arrow-left" onclick="prevScene()">&#8592;</div>
+<div id="arrow-right" onclick="nextScene()">&#8594;</div>
+
+<div id="scene-tabs">
+  <button class="scene-tab active" onclick="goToScene(0)">1 &#24320;&#22330;</button>
+  <button class="scene-tab" onclick="goToScene(1)">2 &#20351;&#21629;</button>
+  <button class="scene-tab" onclick="goToScene(2)">3 &#35268;&#27169;</button>
+  <button class="scene-tab" onclick="goToScene(3)">4 &#25112;&#30053;</button>
+  <button class="scene-tab" onclick="goToScene(4)">5 &#20307;&#31995;</button>
+  <button class="scene-tab" onclick="goToScene(5)">6 &#31185;&#25216;</button>
+  <button class="scene-tab" onclick="goToScene(6)">7 &#21512;&#20249;</button>
+  <button class="scene-tab" onclick="goToScene(7)">8 &#32467;&#23614;</button>
+</div>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="playPauseBtn" onclick="togglePlayPause()">&#9208; &#26242;&#20572;</button>
+  <button class="ctrl-btn" onclick="restart()">&#8629; &#37325;&#25773;</button>
+</div>
+
+<script>
+// ============= 粒子背景 =============
+(function(){
+  var c = document.getElementById("bg-canvas");
+  var ctx = c.getContext("2d");
+  var W, H, pts = [];
+  function resize(){ W = c.width = innerWidth; H = c.height = innerHeight; }
+  resize(); window.addEventListener("resize", resize);
+  for (var i = 0; i < 60; i++) pts.push({
+    x: Math.random()*W, y: Math.random()*H,
+    r: Math.random()*1.5+0.5,
+    vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
+    a: Math.random()*0.4+0.1, p: Math.random()*Math.PI*2, ps: Math.random()*0.02+0.005
+  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for (var i = 0; i < pts.length; i++) {
+      var p = pts[i]; p.x += p.vx; p.y += p.vy; p.p += p.ps;
+      if(p.x<0) p.x=W; if(p.x>W) p.x=0;
+      if(p.y<0) p.y=H; if(p.y>H) p.y=0;
+      var A = p.a * (0.6 + 0.4*Math.sin(p.p));
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = "rgba(200,160,80,"+A+")"; ctx.fill();
+    }
+    for (var i = 0; i < pts.length; i++)
+      for (var j = i+1; j < pts.length; j++) {
+        var dx = pts[i].x-pts[j].x, dy = pts[i].y-pts[j].y, d = Math.sqrt(dx*dx+dy*dy);
+        if (d < 140) {
+          ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle = "rgba(200,160,80,"+(0.08*(1-d/140))+")";
+          ctx.lineWidth = 0.5; ctx.stroke();
+        }
+      }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============= 视频配置 =============
+var SCENES = [
+  {id:"scene1",dur:8000},{id:"scene2",dur:10000},{id:"scene3",dur:13000},
+  {id:"scene4",dur:14000},{id:"scene5",dur:14000},{id:"scene6",dur:12000},
+  {id:"scene7",dur:13000},{id:"scene8",dur:15000}
+];
+var TOTAL = 0; for (var i=0;i<SCENES.length;i++) TOTAL += SCENES[i].dur;
+var cur=0, elapsed=0, lastT=null, playing=true, raf=null;
+
+// ============= 缩放居中 =============
+function scaleStage(){
+  var s = document.getElementById("stage");
+  var sx = innerWidth/1920, sy = innerHeight/1080, sc = Math.min(sx,sy);
+  s.style.transform = "translate("+(innerWidth-1920*sc)/2+"px,"+(innerHeight-1080*sc)/2+"px) scale("+sc+")";
+}
+addEventListener("resize", scaleStage); addEventListener("load", scaleStage); setTimeout(scaleStage,100);
+
+// ============= 场景切换 =============
+function showScene(i){
+  var ss = document.getElementsByClassName("scene");
+  for (var j=0;j<ss.length;j++) ss[j].classList.remove("active");
+  if(i>=0&&i<ss.length) ss[i].classList.add("active");
+  var tabs = document.getElementsByClassName("scene-tab");
+  for (var j=0;j<tabs.length;j++) tabs[j].classList.remove("active");
+  if(tabs[i]) tabs[i].classList.add("active");
+}
+function goToScene(i){
+  var acc=0; for(var j=0;j<i;j++) acc+=SCENES[j].dur;
+  elapsed=acc; cur=i; showScene(i);
+  if(!playing){ var p=Math.min(elapsed/TOTAL,1); document.getElementById("progressBar").style.width=p*100+"%"; }
+}
+function nextScene(){ goToScene((cur+1)%SCENES.length); }
+function prevScene(){ goToScene((cur-1+SCENES.length)%SCENES.length); }
+
+// ============= tick =============
+function tick(ts){
+  if(!playing) return;
+  if(lastT===null) lastT=ts;
+  elapsed += ts-lastT; lastT=ts;
+  var p = Math.min(elapsed/TOTAL,1);
+  document.getElementById("progressBar").style.width = p*100+"%";
+  var acc=0, tgt=0;
+  for(var i=0;i<SCENES.length;i++){ acc+=SCENES[i].dur; if(elapsed<acc){tgt=i;break;} if(i===SCENES.length-1)tgt=i; }
+  if(tgt!==cur){ cur=tgt; showScene(cur); }
+  if(elapsed>=TOTAL){ playing=false; document.getElementById("playPauseBtn").textContent="▶ 播放"; return; }
+  raf = requestAnimationFrame(tick);
+}
+function togglePlayPause(){
+  playing=!playing;
+  var btn=document.getElementById("playPauseBtn");
+  if(playing){ btn.textContent="⏸ 暂停"; lastT=null; raf=requestAnimationFrame(tick); }
+  else { btn.textContent="▶ 播放"; if(raf)cancelAnimationFrame(raf); }
+}
+function restart(){ cur=0; elapsed=0; lastT=null; showScene(0); playing=true;
+  document.getElementById("playPauseBtn").textContent="⏸ 暂停";
+  document.getElementById("progressBar").style.width="0%";
+  if(raf)cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
+}
+showScene(0); raf=requestAnimationFrame(tick);
+</script>
+</body>
+</html>
